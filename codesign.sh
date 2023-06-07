@@ -1,1 +1,0 @@
-codesign -fs my-new-cert --force --deep --timestamp --options runtime florrioafkmac
