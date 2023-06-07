@@ -147,7 +147,7 @@ if __name__ == '__main__':
     app = QApplication([])
     app.setStyle('macos')
     window = QWidget()
-    window.setWindowTitle("AFK Auto Clicker")  # Set the window title
+    window.setWindowTitle("AFK Auto Clicker")
 
     v_layout = QVBoxLayout()
 
