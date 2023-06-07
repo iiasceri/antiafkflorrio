@@ -10,6 +10,7 @@ from screeninfo import get_monitors
 
 import sys
 
+
 def get_mac_screen_hw(w_or_h):
     with os.popen("system_profiler SPDisplaysDataType | grep Resolution") as f:
         string_l = f.readlines()
@@ -75,7 +76,7 @@ def anti_afk_florrio(searched_word):
 
 class Timer(threading.Thread):
     def __init__(self):
-        self.interval = 60
+        self.interval = 4
         self._timer_runs = threading.Event()
         self._timer_runs.set()
         super().__init__()
@@ -99,25 +100,14 @@ class HelloWorldTimer(Timer):
     def timer(self):
         anti_afk_florrio("here")
         next_loop = time.time() + self.interval
-        while time.time() < next_loop:
-            remaining_time = next_loop - time.time()
-            remaining_time_str = f"Next check to click in: {remaining_time:.1f} seconds"
-            update_next_click_label.emit(remaining_time_str)
-            time.sleep(1)
-            if not self._timer_runs.is_set():
-                break
 
 
 hello_world_timer = HelloWorldTimer()
 
+
 class SignalEmitter(QObject):
     update_next_click_label = Signal(str)
     update_next_click_label_to_idle = Signal()
-
-
-signal_emitter = SignalEmitter()
-update_next_click_label = signal_emitter.update_next_click_label
-update_next_click_label_to_idle = signal_emitter.update_next_click_label_to_idle
 
 
 def start_afk():
@@ -131,47 +121,30 @@ def stop_afk():
     global hello_world_timer
     if hello_world_timer is not None and hello_world_timer.is_alive():
         hello_world_timer.stop()
-        update_next_click_label_to_idle.emit()
         hello_world_timer = None  # Resetting the timer variable
-
-
-def update_timer_value(new_interval):
-    if new_interval != '':
-        new_interval_int = int(new_interval)
-        hello_world_timer.set_interval(new_interval_int)
-    else:
-        hello_world_timer.set_interval(60)
 
 
 if __name__ == '__main__':
     app = QApplication([])
     app.setStyle('macos')
     window = QWidget()
-    window.setWindowTitle("AFK Auto Clicker")
+    window.setWindowTitle("AFK Auto Clicker")  # Set the window title
 
     v_layout = QVBoxLayout()
-
-    input_field = QLineEdit('60')
 
     startAfkBtn = QPushButton('Start afk auto click')
     stopAfkBtn = QPushButton('Stop afk auto click')
 
-    next_click_label = QLabel('Doing nothing now')
+    next_click_label = QLabel('Click every 4s on word here')
 
     v_layout.addWidget(QLabel('FLORR IO ANTI ANTI AFK:'))
     v_layout.addWidget(QLabel('afk text: \'here\''))
     v_layout.addWidget(startAfkBtn)
     v_layout.addWidget(stopAfkBtn)
-    v_layout.addWidget(QLabel('check for afk dialog every (seconds):'))
-    v_layout.addWidget(input_field)
     v_layout.addWidget(next_click_label)
 
     startAfkBtn.clicked.connect(start_afk)
     stopAfkBtn.clicked.connect(stop_afk)
-    input_field.textChanged.connect(update_timer_value)
-
-    update_next_click_label.connect(next_click_label.setText)
-    update_next_click_label_to_idle.connect(lambda: next_click_label.setText('Doing nothing now'))
 
     window.setLayout(v_layout)
     window.show()
