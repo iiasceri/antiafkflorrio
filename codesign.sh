@@ -1,0 +1,1 @@
+codesign -fs my-new-cert --force --deep --timestamp --options runtime /Users/nick/Documents/antiAfkflorrio/dist/afkinflorrio.dmg
