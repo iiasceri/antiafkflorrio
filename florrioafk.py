@@ -12,7 +12,7 @@ import sys
 
 class TmpFlags:
     def __init__(self):
-        self.space_check_box = False
+        self.hold_space = True
 
 
 def isWindowsOS():
@@ -36,14 +36,23 @@ def space_key():
     pyautogui.keyUp('space')
     pyautogui.keyDown('space')
 
-
-def hold_space_checked(state):
-    # Handle the checkbox state changes
-    if state == 0:
-        tmp_flags.space_check_box = False
-    else:
-        tmp_flags.space_check_box = True
-
+def scan_and_click(resized_image, searched_word, scale_factor_h, scale_factor_v):
+    result = pytesseract.image_to_data(resized_image, output_type=pytesseract.Output.DICT)
+    text = result['text']
+    word_boxes = list(zip(result['left'], result['top'], result['width'], result['height']))
+    for word, box in zip(text, word_boxes):
+        searched_word_lower_case = str(searched_word).lower()
+        word_lower_case = str(word).lower()
+        if searched_word_lower_case in word_lower_case:
+            center0 = box[0] / scale_factor_h + (box[2] / 2) / scale_factor_h
+            center1 = box[1] / scale_factor_v + (box[3] / 2) / scale_factor_v
+            if "?" in word_lower_case:
+                for i in range(15):
+                    center1 += 3
+                    pyautogui.moveTo(center0, center1)
+                    pyautogui.doubleClick(center0, center1)
+            pyautogui.moveTo(center0, center1)
+            pyautogui.doubleClick(center0, center1)
 
 def anti_afk_florrio(searched_word):
     if isWindowsOS():
@@ -80,22 +89,7 @@ def anti_afk_florrio(searched_word):
         scale_factor_h = mac_h / new_width
         scale_factor_v = mac_w / new_height
         resized_image = image.resize((mac_h, mac_w))
-    result = pytesseract.image_to_data(resized_image, output_type=pytesseract.Output.DICT)
-    text = result['text']
-    word_boxes = list(zip(result['left'], result['top'], result['width'], result['height']))
-    for word, box in zip(text, word_boxes):
-        searched_word_lower_case = str(searched_word).lower()
-        word_lower_case = str(word).lower()
-        if searched_word_lower_case in word_lower_case:
-            center0 = box[0] / scale_factor_h + (box[2] / 2) / scale_factor_h
-            center1 = box[1] / scale_factor_v + (box[3] / 2) / scale_factor_v
-            if "?" in word_lower_case:
-                for i in range(15):
-                    center1 += 3
-                    pyautogui.moveTo(center0, center1)
-                    pyautogui.doubleClick(center0, center1)
-            pyautogui.moveTo(center0, center1)
-            pyautogui.doubleClick(center0, center1)
+    scan_and_click(resized_image, searched_word, scale_factor_h=scale_factor_h, scale_factor_v=scale_factor_v)
 
 
 class Timer(threading.Thread):
@@ -114,9 +108,9 @@ class Timer(threading.Thread):
             time.sleep(self.interval)
 
     def stop(self):
-        hold_space_checkbox.setChecked(False)
         self._timer_runs.clear()
         pyautogui.keyUp('space')
+        tmp_flags.hold_space = False
 
 
 class HelloWorldTimer(Timer):
@@ -126,7 +120,7 @@ class HelloWorldTimer(Timer):
 
     def timer(self):
         if self.is_running:
-            if tmp_flags.space_check_box:
+            if tmp_flags.hold_space:
                 space_key()
             anti_afk_florrio("here")
 
@@ -166,16 +160,13 @@ if __name__ == '__main__':
 
     start_afk_btn = QPushButton('start afk auto click')
     stop_afk_btn = QPushButton('stop afk auto click')
-    hold_space_checkbox = QCheckBox('hold space key?')
 
     v_layout.addWidget(start_afk_btn)
     v_layout.addWidget(stop_afk_btn)
     v_layout.addWidget(QLabel('clicks every 4s on word ->here<-'))
-    v_layout.addWidget(hold_space_checkbox)
 
     start_afk_btn.clicked.connect(start_afk)
     stop_afk_btn.clicked.connect(stop_afk)
-    hold_space_checkbox.stateChanged.connect(hold_space_checked)
 
     window.setLayout(v_layout)
     window.show()
