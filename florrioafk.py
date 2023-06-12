@@ -47,14 +47,13 @@ def scan_and_click(resized_image, searched_word, scale_factor_h, scale_factor_v)
 
 
 def anti_afk_florrio(searched_word):
-    pyautogui.doubleClick(500,500)
-    img_multiplier = round(random.uniform(1, 4), 1)
+    img_multiplier = round(random.uniform(1, 2), 1)
     image = pyautogui.screenshot()
     if isWindowsOS():
         scale_factor_h = 1
         scale_factor_v = 1
         resized_image = image
-        pyautogui.doubleClick(image.width/2, image.height/2)
+        pyautogui.doubleClick(image.width / 2, image.height / 2)
     else:
         mac_h = get_mac_screen_hw("h")
         mac_w = get_mac_screen_hw("w")
@@ -79,9 +78,9 @@ def anti_afk_florrio(searched_word):
         else:
             raise ValueError("At least one of new_width or new_height should be provided")
 
-        scale_factor_h = (mac_h / new_width)*img_multiplier
-        scale_factor_v = (mac_w / new_height)*img_multiplier
-        resized_image = image.resize((int(mac_h*img_multiplier), int(mac_w*img_multiplier)))
+        scale_factor_h = (mac_h / new_width) * img_multiplier
+        scale_factor_v = (mac_w / new_height) * img_multiplier
+        resized_image = image.resize((int(mac_h * img_multiplier), int(mac_w * img_multiplier)))
 
     scan_and_click(resized_image, searched_word, scale_factor_h=scale_factor_h, scale_factor_v=scale_factor_v)
 
@@ -105,6 +104,33 @@ class Timer(threading.Thread):
         self._timer_runs.clear()
 
 
+class LongTimer(threading.Thread):
+    def __init__(self):
+        self.interval = 120
+        self._timer_runs = threading.Event()
+        self._timer_runs.set()
+        super().__init__()
+
+    def set_interval(self, interval):
+        self.interval = interval
+
+    def run(self):
+        while self._timer_runs.is_set():
+            self.timer()
+            time.sleep(self.interval)
+
+    def stop(self):
+        self._timer_runs.clear()
+
+class HelloWorldLongTimer(LongTimer):
+    def __init__(self):
+        super().__init__()
+        self.is_running = False
+
+    def timer(self):
+        if self.is_running:
+            pyautogui.doubleClick(900, 500)
+
 class HelloWorldTimer(Timer):
     def __init__(self):
         super().__init__()
@@ -116,6 +142,7 @@ class HelloWorldTimer(Timer):
 
 
 hello_world_timer = HelloWorldTimer()
+hello_world_long_timer = HelloWorldLongTimer()
 
 
 class SignalEmitter(QObject):
@@ -129,6 +156,11 @@ def start_afk():
         hello_world_timer = HelloWorldTimer()
         hello_world_timer.is_running = True
         hello_world_timer.start()
+    global hello_world_long_timer
+    if hello_world_long_timer is None or not hello_world_long_timer.is_alive():
+        hello_world_long_timer = HelloWorldLongTimer()
+        hello_world_long_timer.is_running = True
+        hello_world_long_timer.start()
 
 
 def stop_afk():
@@ -137,6 +169,12 @@ def stop_afk():
         hello_world_timer.is_running = False
         hello_world_timer.stop()
         hello_world_timer = None  # Resetting the timer variable
+        global hello_world_timer
+    global hello_world_long_timer
+    if hello_world_long_timer is not None and hello_world_long_timer.is_alive():
+        hello_world_long_timer.is_running = False
+        hello_world_long_timer.stop()
+        hello_world_long_timer = None  # Resetting the timer variable
 
 
 if __name__ == '__main__':
