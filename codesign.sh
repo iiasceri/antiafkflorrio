@@ -1,2 +1,2 @@
-codesign -fs my-new-cert --force --deep --timestamp --options runtime /Users/nick/Documents/antiAfkflorrio/dist/afkinflorrio.dmg
+sudo codesign -fs my-new-cert --force --deep --timestamp --options runtime /Users/nick/Documents/antiAfkflorrio/dist/afkinflorrio.dmg
 #sudo codesign --force --deep --sign - /Applications/DaVinci\ Resolve/DaVinci\ Resolve.app
