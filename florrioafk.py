@@ -8,11 +8,7 @@ from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QCheckBox
 from screeninfo import get_monitors
 import sys
-
-
-class TmpFlags:
-    def __init__(self):
-        self.hold_space = True
+import random
 
 
 def isWindowsOS():
@@ -32,10 +28,6 @@ def get_mac_screen_hw(w_or_h):
             return int(height.strip().replace('Retina', '').replace(' ', ''))
 
 
-def space_key():
-    pyautogui.keyUp('space')
-    pyautogui.keyDown('space')
-
 def scan_and_click(resized_image, searched_word, scale_factor_h, scale_factor_v):
     result = pytesseract.image_to_data(resized_image, output_type=pytesseract.Output.DICT)
     text = result['text']
@@ -44,28 +36,32 @@ def scan_and_click(resized_image, searched_word, scale_factor_h, scale_factor_v)
         searched_word_lower_case = str(searched_word).lower()
         word_lower_case = str(word).lower()
         if searched_word_lower_case in word_lower_case:
-            center0 = box[0] / scale_factor_h + (box[2] / 2) / scale_factor_h
-            center1 = box[1] / scale_factor_v + (box[3] / 2) / scale_factor_v
+            center_h = box[0] / scale_factor_h + (box[2] / 2) / scale_factor_h
+            center_v = box[1] / scale_factor_v + (box[3] / 2) / scale_factor_v
             if "?" in word_lower_case:
                 for i in range(15):
-                    center1 += 3
-                    pyautogui.moveTo(center0, center1)
-                    pyautogui.doubleClick(center0, center1)
-            pyautogui.moveTo(center0, center1)
-            pyautogui.doubleClick(center0, center1)
+                    center_v += 3
+                    pyautogui.doubleClick(center_h, center_v)
+            pyautogui.moveTo(center_h, center_v)
+            pyautogui.doubleClick(center_h, center_v)
+
 
 def anti_afk_florrio(searched_word):
+    pyautogui.doubleClick(500,500)
+    img_multiplier = round(random.uniform(1, 4), 1)
+    image = pyautogui.screenshot()
     if isWindowsOS():
-        image = pyautogui.screenshot()
         scale_factor_h = 1
         scale_factor_v = 1
         resized_image = image
+        pyautogui.doubleClick(image.width/2, image.height/2)
     else:
+        mac_h = get_mac_screen_hw("h")
+        mac_w = get_mac_screen_hw("w")
         monitor = get_monitors()[0]  # Assuming a single monitor setup
         new_width = monitor.width
         new_height = monitor.height
         # resizing
-        image = pyautogui.screenshot()
         original_width, original_height = image.size
 
         if new_width and new_height:
@@ -83,18 +79,16 @@ def anti_afk_florrio(searched_word):
         else:
             raise ValueError("At least one of new_width or new_height should be provided")
 
-        # searching
-        mac_h = get_mac_screen_hw("h")
-        mac_w = get_mac_screen_hw("w")
-        scale_factor_h = mac_h / new_width
-        scale_factor_v = mac_w / new_height
-        resized_image = image.resize((mac_h, mac_w))
+        scale_factor_h = (mac_h / new_width)*img_multiplier
+        scale_factor_v = (mac_w / new_height)*img_multiplier
+        resized_image = image.resize((int(mac_h*img_multiplier), int(mac_w*img_multiplier)))
+
     scan_and_click(resized_image, searched_word, scale_factor_h=scale_factor_h, scale_factor_v=scale_factor_v)
 
 
 class Timer(threading.Thread):
     def __init__(self):
-        self.interval = 4
+        self.interval = 5
         self._timer_runs = threading.Event()
         self._timer_runs.set()
         super().__init__()
@@ -109,8 +103,6 @@ class Timer(threading.Thread):
 
     def stop(self):
         self._timer_runs.clear()
-        pyautogui.keyUp('space')
-        tmp_flags.hold_space = False
 
 
 class HelloWorldTimer(Timer):
@@ -120,8 +112,6 @@ class HelloWorldTimer(Timer):
 
     def timer(self):
         if self.is_running:
-            if tmp_flags.hold_space:
-                space_key()
             anti_afk_florrio("here")
 
 
@@ -149,7 +139,6 @@ def stop_afk():
         hello_world_timer = None  # Resetting the timer variable
 
 
-tmp_flags = TmpFlags()
 if __name__ == '__main__':
     app = QApplication([])
     app.setStyle('macos')
@@ -163,7 +152,7 @@ if __name__ == '__main__':
 
     v_layout.addWidget(start_afk_btn)
     v_layout.addWidget(stop_afk_btn)
-    v_layout.addWidget(QLabel('clicks every 4s on word ->here<-'))
+    v_layout.addWidget(QLabel('clicks every 5s on word ->here<-'))
 
     start_afk_btn.clicked.connect(start_afk)
     stop_afk_btn.clicked.connect(stop_afk)
